@@ -37,7 +37,7 @@ const LoginPage = () => {
       if (response.success) {
         console.log("Signature:", response.result);
 
-        fetch("http://localhost:3500/api/auth/hive-login", {
+        fetch("https://backend-hivequant.onrender.com/api/auth/hive-login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
