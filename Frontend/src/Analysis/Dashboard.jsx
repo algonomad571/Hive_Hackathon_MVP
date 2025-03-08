@@ -48,6 +48,58 @@ const Dashboard = () => {
     { name: "for 30 min.", icon: "⏱️" },
   ];
 
+  const AutoInvestDropdown = () => {
+    const [selectedOption, setSelectedOption] = useState("Select Duration ⏳");
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+  
+    const dropdownOptions = [
+      { name: "1 Month", icon: "📅" },
+      { name: "3 Months", icon: "📆" },
+      { name: "6 Months", icon: "📊" },
+      { name: "1 Year", icon: "📈" },
+    ];
+  
+    const handleDropdownSelect = async (option) => {
+      setSelectedOption(option.name);
+      setDropdownOpen(false);
+  
+      try {
+        const response = await axios.post("http://localhost:3500/api/investment/trade", {
+          duration: option.name,
+        });
+  
+        console.log("Server Response:", response.data);
+      } catch (error) {
+        console.error("Error sending AUTO_INVEST request:", error);
+      }
+    };
+  
+    return (
+      <div className="relative">
+        <button 
+          className="bg-gray-800 px-4 py-2 rounded-md w-full text-left"
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+        >
+          {selectedOption} ⏳
+        </button>
+  
+        {dropdownOpen && (
+          <div className="absolute left-0 mt-2 w-full bg-gray-800 rounded-md shadow-lg">
+            {dropdownOptions.map((option, index) => (
+              <div 
+                key={index} 
+                className="px-4 py-2 hover:bg-gray-700 cursor-pointer"
+                onClick={() => handleDropdownSelect(option)}
+              >
+                {option.icon} {option.name}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Menu items
   const menuItems = [
     { name: "Dashboard", icon: "□" },
@@ -254,7 +306,7 @@ const Dashboard = () => {
                 >
                   <span className="mr-3">
                     <img
-                      src={AIIconImage || "/placeholder.svg"}
+                      src={AiRoboIcon || "/placeholder.svg"}
                       alt="AI"
                       className="w-5 h-5"
                       onError={(e) => {
@@ -345,7 +397,7 @@ const Dashboard = () => {
                 <div className="flex items-center">
                   <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center mr-4">
                     <img
-                      src={AIIconImage || "/placeholder.svg"}
+                      src={AiRoboIcon                         || "/placeholder.svg"}
                       alt="AI"
                       className="w-6 h-6"
                       onError={(e) => {
