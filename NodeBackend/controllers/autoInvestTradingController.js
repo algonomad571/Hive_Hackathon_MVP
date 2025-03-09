@@ -1,8 +1,7 @@
+const { io } = require("../server"); // Import WebSocket instance
 const { getHivePrice, tradeHive, getHBDPrice, tradeHBD } = require("../services/binanceService");
 const { predictMarketTrend } = require("../services/aiTradingService");
-const { initTradeConfig } = require("../services/tradeConfigService");
 const { getUserBalance } = require("../services/hiveService"); // Fetch user's real balance
-const { getUserFrequency } = require("../services/frequencyService"); // Service to fetch user frequency
 
 const tradeConfig = {
     tradeAmount: 10,
@@ -11,16 +10,28 @@ const tradeConfig = {
     autoInvestPercentage: 50
 };
 
-initTradeConfig(tradeConfig);
+let tradeIntervals = {}; // Store user-specific trade intervals
 
-let tradeIntervals = {}; // Store user-specific intervals
+// Frequency Mapping from Dropdown
+const frequencyToMs = {
+    "Continue AUTO_INVEST.": 1000,
+    "for 5 min.": 5 * 60 * 1000,
+    "for 10 min.": 10 * 60 * 1000,
+    "for 15 min.": 15 * 60 * 1000,
+    "for 20 min.": 20 * 60 * 1000,
+    "for 25 min.": 25 * 60 * 1000,
+    "for 30 min.": 30 * 60 * 1000
+};
 
 const startAutoTrading = async (user, asset, getPriceFn, tradeFn, frequency) => {
-    if (!frequencyToMs[frequency]) {
+    const intervalMs = frequencyToMs[frequency];
+
+    if (!intervalMs) {
         console.error(`❌ Invalid frequency: ${frequency}`);
         return { action: "hold", reason: "Invalid frequency selected" };
     }
 
+    // Stop previous trading session if running
     if (tradeIntervals[`${user.username}_${asset}`]) {
         clearInterval(tradeIntervals[`${user.username}_${asset}`]);
         console.log(`🛑 Stopping previous trading session for ${asset} - ${user.username}`);
@@ -36,7 +47,7 @@ const startAutoTrading = async (user, asset, getPriceFn, tradeFn, frequency) => 
 
         console.log(`📈 Current ${asset} Price: $${price}`);
 
-        // Get the user's real Hive/HBD balance
+        // Get user's balance
         const userBalance = await getUserBalance(user.username, asset);
         if (!userBalance || userBalance <= 0) {
             console.log(`🚫 Insufficient balance for ${user.username} to trade ${asset}`);
@@ -52,75 +63,71 @@ const startAutoTrading = async (user, asset, getPriceFn, tradeFn, frequency) => 
         if (prediction === "BUY") {
             tradeAction = "buy";
             reason = `AI suggests buying ${asset}`;
-            await tradeFn("BUY", autoInvestAmount, user.username);  // Execute real transaction
+            await tradeFn("BUY", autoInvestAmount, user.username);  
         } else if (prediction === "SELL") {
             tradeAction = "sell";
             reason = `AI suggests selling ${asset}`;
-            await tradeFn("SELL", autoInvestAmount, user.username); // Execute real transaction
+            await tradeFn("SELL", autoInvestAmount, user.username);
         }
 
         console.log(`✅ Trade executed: ${tradeAction} ${autoInvestAmount} ${asset} at $${price}`);
-    }, frequencyToMs[frequency]);
+
+        // **Emit trade event to frontend**
+        io.emit("tradeUpdate", {
+            username: user.username,
+            asset,
+            action: tradeAction,
+            amount: autoInvestAmount,
+            price,
+            timestamp: new Date().toISOString(),
+            message: `Trade executed: ${tradeAction} ${autoInvestAmount} ${asset} at $${price}`
+        });
+
+    }, intervalMs);
 
     return { action: "started", reason: `Trading every ${frequency}` };
 };
 
-// 🟢 API to Fetch User's Frequency
-const getUserAutoInvestFrequency = async (req, res) => {
+// 🟢 Start Auto Trading (HIVE)
+async function autoTradeHive(req) {
     try {
-        const { username } = req.params;
-        const frequency = await getUserFrequency(username);
+        const hivePrice = await getHivePrice(); // Fetch live price
+        let tradeDecision = "HOLD"; // Default decision
 
-        if (!frequency) {
-            return res.status(404).json({ error: "Frequency not set" });
+        if (hivePrice < 0.45) {
+            tradeDecision = "BUY";
+        } else if (hivePrice > 0.50) {
+            tradeDecision = "SELL";
         }
 
-        res.json({ frequency });
-    } catch (error) {
-        console.error("Error fetching frequency:", error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-};
-
-// 🟢 API to Start Auto Trading (Called when Button is Pressed)
-const autoTradeHive = async (req, res) => {
-    try {
-        const { username } = req.body;
-
-        // Fetch user's saved frequency
-        const frequency = await getUserFrequency(username);
-        if (!frequency) {
-            return res.status(400).json({ error: "No frequency set for auto-investment" });
-        }
-
-        const result = await startAutoTrading({ username }, "HIVE", getHivePrice, tradeHive, frequency);
-        res.json(result);
+        return { success: true, tradeDecision, tradePrice: hivePrice };
     } catch (error) {
         console.error("Error in autoTradeHive:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+        return { success: false, error: "Error processing HIVE trade" };
     }
-};
+}
 
-// 🟢 API to Start Auto Trading for HBD
-const autoTradeHBD = async (req, res) => {
+// 🟢 Start Auto Trading (HBD)
+async function autoTradeHBD(req) {
     try {
-        const { username } = req.body;
+        const hbdPrice = await getHBDPrice(); // Fetch live price
+        let tradeDecision = "HOLD"; // Default decision
 
-        // Fetch user's saved frequency
-        const frequency = await getUserFrequency(username);
-        if (!frequency) {
-            return res.status(400).json({ error: "No frequency set for auto-investment" });
+        if (hbdPrice < 0.98) {
+            tradeDecision = "BUY";
+        } else if (hbdPrice > 1.02) {
+            tradeDecision = "SELL";
         }
 
-        const result = await startAutoTrading({ username }, "HBD", getHBDPrice, tradeHBD, frequency);
-        res.json(result);
+        return { success: true, tradeDecision, tradePrice: hbdPrice };
     } catch (error) {
         console.error("Error in autoTradeHBD:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+        return { success: false, error: "Error processing HBD trade" };
     }
-};
+}
 
-// 🛑 API to Stop Auto Trading
+
+// 🛑 Stop Auto Trading
 const stopAutoTrade = async (req, res) => {
     try {
         const { username } = req.body;
@@ -140,4 +147,4 @@ const stopAutoTrade = async (req, res) => {
     }
 };
 
-module.exports = { getUserAutoInvestFrequency, autoTradeHive, autoTradeHBD, stopAutoTrade };
+module.exports = { autoTradeHive, autoTradeHBD, stopAutoTrade };
