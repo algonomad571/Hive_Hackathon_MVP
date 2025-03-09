@@ -142,4 +142,38 @@
 
 // export default AiSimulator;
 
+import React, { useEffect, useState } from "react";
+import io from "socket.io-client";
 
+const socket = io("https://backend-hivequant.onrender.com/api/investments/trade");  // Adjust the backend URL if needed
+
+const AutoTradeMonitor = () => {
+    const [tradeLogs, setTradeLogs] = useState([]);
+
+    useEffect(() => {
+        // Listen for trade updates
+        socket.on("tradeUpdate", (data) => {
+            console.log("📡 Trade Update Received:", data);
+            setTradeLogs((prevLogs) => [...prevLogs, data]);
+        });
+
+        return () => {
+            socket.off("tradeUpdate");
+        };
+    }, []);
+
+    return (
+        <div>
+            <h2>📊 Live Auto-Trading Updates</h2>
+            <ul>
+                {tradeLogs.map((log, index) => (
+                    <li key={index}>
+                        [{log.timestamp}] {log.username} {log.tradeAction} {log.asset} at ${log.price} - {log.reason}
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
+};
+
+export default AutoTradeMonitor;

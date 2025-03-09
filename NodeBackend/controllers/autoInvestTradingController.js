@@ -2,6 +2,7 @@ const { getHivePrice, tradeHive, getHBDPrice, tradeHBD } = require("../services/
 const { predictMarketTrend } = require("../services/aiTradingService");
 const { initTradeConfig } = require("../services/tradeConfigService");
 const { getUserBalance } = require("../services/hiveService"); // Fetch user's real balance
+const { getUserFrequency } = require("../services/frequencyService"); // Service to fetch user frequency
 
 const tradeConfig = {
     tradeAmount: 10,
@@ -13,16 +14,6 @@ const tradeConfig = {
 initTradeConfig(tradeConfig);
 
 let tradeIntervals = {}; // Store user-specific intervals
-
-const frequencyToMs = {
-    "Continue AUTO_INVEST.": 1000,
-    "for 5 min.": 5 * 60 * 1000,
-    "for 10 min.": 10 * 60 * 1000,
-    "for 15 min.": 15 * 60 * 1000,
-    "for 20 min.": 20 * 60 * 1000,
-    "for 25 min.": 25 * 60 * 1000,
-    "for 30 min.": 30 * 60 * 1000
-};
 
 const startAutoTrading = async (user, asset, getPriceFn, tradeFn, frequency) => {
     if (!frequencyToMs[frequency]) {
@@ -74,27 +65,79 @@ const startAutoTrading = async (user, asset, getPriceFn, tradeFn, frequency) => 
     return { action: "started", reason: `Trading every ${frequency}` };
 };
 
-// Start trading for HIVE
-const autoTradeHive = async (user, frequency) => {
-    return startAutoTrading(user, "HIVE", getHivePrice, tradeHive, frequency);
-};
+// 🟢 API to Fetch User's Frequency
+const getUserAutoInvestFrequency = async (req, res) => {
+    try {
+        const { username } = req.params;
+        const frequency = await getUserFrequency(username);
 
-// Start trading for HBD
-const autoTradeHBD = async (user, frequency) => {
-    return startAutoTrading(user, "HBD", getHBDPrice, tradeHBD, frequency);
-};
-
-// Stop auto-trading for a user
-const stopAutoTrade = (user) => {
-    Object.keys(tradeIntervals).forEach((key) => {
-        if (key.startsWith(user.username)) {
-            clearInterval(tradeIntervals[key]);
-            delete tradeIntervals[key];
+        if (!frequency) {
+            return res.status(404).json({ error: "Frequency not set" });
         }
-    });
 
-    console.log(`🛑 Auto-trading stopped for ${user.username}`);
-    return { success: true, message: "Auto-trading stopped" };
+        res.json({ frequency });
+    } catch (error) {
+        console.error("Error fetching frequency:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 };
 
-module.exports = { autoTradeHive, autoTradeHBD, stopAutoTrade };
+// 🟢 API to Start Auto Trading (Called when Button is Pressed)
+const autoTradeHive = async (req, res) => {
+    try {
+        const { username } = req.body;
+
+        // Fetch user's saved frequency
+        const frequency = await getUserFrequency(username);
+        if (!frequency) {
+            return res.status(400).json({ error: "No frequency set for auto-investment" });
+        }
+
+        const result = await startAutoTrading({ username }, "HIVE", getHivePrice, tradeHive, frequency);
+        res.json(result);
+    } catch (error) {
+        console.error("Error in autoTradeHive:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+// 🟢 API to Start Auto Trading for HBD
+const autoTradeHBD = async (req, res) => {
+    try {
+        const { username } = req.body;
+
+        // Fetch user's saved frequency
+        const frequency = await getUserFrequency(username);
+        if (!frequency) {
+            return res.status(400).json({ error: "No frequency set for auto-investment" });
+        }
+
+        const result = await startAutoTrading({ username }, "HBD", getHBDPrice, tradeHBD, frequency);
+        res.json(result);
+    } catch (error) {
+        console.error("Error in autoTradeHBD:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+// 🛑 API to Stop Auto Trading
+const stopAutoTrade = async (req, res) => {
+    try {
+        const { username } = req.body;
+
+        Object.keys(tradeIntervals).forEach((key) => {
+            if (key.startsWith(username)) {
+                clearInterval(tradeIntervals[key]);
+                delete tradeIntervals[key];
+            }
+        });
+
+        console.log(`🛑 Auto-trading stopped for ${username}`);
+        res.json({ success: true, message: "Auto-trading stopped" });
+    } catch (error) {
+        console.error("Error stopping auto-trade:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+};
+
+module.exports = { getUserAutoInvestFrequency, autoTradeHive, autoTradeHBD, stopAutoTrade };
