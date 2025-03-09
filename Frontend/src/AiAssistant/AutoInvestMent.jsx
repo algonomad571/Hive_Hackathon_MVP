@@ -4,7 +4,7 @@ import io from "socket.io-client";
 import axios from "axios";
 
 const API_URL = "https://backend-hivequant.onrender.com/api/investments";
-const socket = io("http://localhost:5000");
+const socket = io("https://backend-hivequant.onrender.com");
 
 const HiveTradingApp = () => {
     const [username, setUsername] = useState("muskan");
