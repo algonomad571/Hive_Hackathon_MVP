@@ -496,6 +496,7 @@ const Dashboard = () => {
               : selectedOption.includes("Continue investment")
                 ? "Bot is investing continuously"
                 : "Bot is investing"
+  
 }
 
                       
