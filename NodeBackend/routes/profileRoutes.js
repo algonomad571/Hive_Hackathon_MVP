@@ -21,7 +21,7 @@ router.get('/test/users', async (req, res) => {
 });
 
 // Profile route
-router.get('/api/profile/:username', async (req, res) => {
+router.get('/:username', async (req, res) => {
     try {
         console.log('Fetching profile for:', req.params.username);
         const user = await User.findOne({ username: req.params.username });
