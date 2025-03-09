@@ -38,7 +38,14 @@ const Navbar = () => {
             <NavLink to="/features">Features</NavLink>
             <NavLink to="/dashboard">Dashboard</NavLink>
             <NavLink to="/premium">Premium</NavLink>
-            <NavLink to="/ai">AI Assistant</NavLink>
+            <Link
+              to="/simulator"
+              className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium relative group"
+            >
+              <span>AI Assistant</span>
+              <span className="absolute bottom-0 left-0 w-full h-px bg-cyan-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></span>
+            </Link>
+
             
             {/* Auth Buttons */}
             <div className="flex items-center space-x-4">
@@ -81,7 +88,7 @@ const Navbar = () => {
               <MobileNavLink to="/features">Features</MobileNavLink>
               <MobileNavLink to="/dashboard">Dashboard</MobileNavLink>
               <MobileNavLink to="/premium">Premium</MobileNavLink>
-              <MobileNavLink to="/ai">AI Assistant</MobileNavLink>
+              <MobileNavLink to="/simulator">AI Assistant</MobileNavLink>
               
               <div className="flex flex-col space-y-2 pt-4">
                 <Link to="/login">
