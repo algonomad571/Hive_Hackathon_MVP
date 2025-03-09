@@ -1,5 +1,5 @@
 const express = require("express");
-const { startAutoTrading, stopAutoTrade } = require("../controllers/tradeController");
+const { startAutoTrading, stopAutoTrade } = require("../controllers/autoInvestTradingRoutes");
 
 const router = express.Router();
 
