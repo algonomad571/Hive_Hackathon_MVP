@@ -97,6 +97,10 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
+app.get("/", (req, res) => {
+  res.send("Hello, Render!");
+});
+
 console.log('Environment variables loaded:', {
   mongodbUri: process.env.MONGODB_URI ? 'Defined' : 'Undefined',
   port: process.env.PORT
