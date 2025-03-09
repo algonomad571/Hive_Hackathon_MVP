@@ -1,115 +1,90 @@
-const { io } = require("../server");
+const { io } = require("../server"); 
+const { predictMarketTrend } = require("../services/aiTradingService");
+const { getUserBalance } = require("../services/hiveService");
 
-// Simulated user balance
-let userBalances = {};
-
-// Dummy trade configuration
 const tradeConfig = {
     tradeAmount: 10,
-    stopLossPercentage: 5,
-    takeProfitPercentage: 10,
     autoInvestPercentage: 50
 };
 
-let tradeIntervals = {}; 
+let tradeIntervals = {}; // Store user-specific trade intervals
 
-const frequencyToMs = {
-    "Continue AUTO_INVEST.": 1000,
-    "for 5 min.": 5 * 60 * 1000,
-    "for 10 min.": 10 * 60 * 1000,
-    "for 15 min.": 15 * 60 * 1000
-};
+const startAutoTrading = async (user, asset, getPriceFn, tradeFn) => {
+    const intervalMs = 1000; // Force API calls every 1 second
 
-// Function to generate random price changes
-const getRandomPrice = (currentPrice) => {
-    let change = (Math.random() * 0.1 - 0.05).toFixed(4); // ±5% change
-    return Math.max(0.01, (currentPrice + parseFloat(change)).toFixed(4));
-};
-
-// Simulated AI Market Prediction
-const predictMarketTrend = (price) => {
-    if (price < 0.4) return "BUY";
-    if (price > 0.6) return "SELL";
-    return "HOLD";
-};
-
-// Simulated trading function
-const tradeSimulation = (action, amount, username, asset) => {
-    if (!userBalances[username]) userBalances[username] = { HIVE: 100, HBD: 100 };
-
-    if (action === "BUY") {
-        userBalances[username][asset] += amount;
-    } else if (action === "SELL" && userBalances[username][asset] >= amount) {
-        userBalances[username][asset] -= amount;
-    }
-
-    console.log(`📊 [SIMULATION] ${username} ${action} ${amount} ${asset}. Balance: ${userBalances[username][asset]}`);
-};
-
-// Simulated auto trading
-const startAutoTrading = async (user, asset, frequency) => {
-    let price = 0.5; // Starting dummy price
-    const intervalMs = frequencyToMs[frequency];
-
-    if (!intervalMs) {
-        console.error(`❌ Invalid frequency: ${frequency}`);
-        return { action: "hold", reason: "Invalid frequency" };
-    }
-
+    // Stop previous trading session if running
     if (tradeIntervals[`${user.username}_${asset}`]) {
         clearInterval(tradeIntervals[`${user.username}_${asset}`]);
+        console.log(`🛑 Stopping previous trading session for ${asset} - ${user.username}`);
     }
 
-    console.log(`🔵 Starting simulated trading for ${asset} every ${frequency}`);
+    console.log(`🔵 Starting auto-trading for ${asset} every 1 second`);
 
     tradeIntervals[`${user.username}_${asset}`] = setInterval(async () => {
-        price = getRandomPrice(price); // Simulate price movement
+        console.log(`⏳ Executing trade for ${asset} - ${user.username}`);
 
-        let prediction = predictMarketTrend(price);
+        const price = await getPriceFn();
+        if (!price) return console.log(`⚠️ ${asset} price unavailable`);
+
+        console.log(`📈 Current ${asset} Price: $${price}`);
+
+        // Simulate fetching user balance
+        const userBalance = await getUserBalance(user.username, asset);
+        if (!userBalance || userBalance <= 0) {
+            console.log(`🚫 Insufficient balance for ${user.username} to trade ${asset}`);
+            return;
+        }
+
+        let autoInvestAmount = (tradeConfig.autoInvestPercentage / 100) * userBalance;
+
+        let prediction = await predictMarketTrend(asset, price);
         let tradeAction = "hold";
         let reason = "Market stable";
 
         if (prediction === "BUY") {
             tradeAction = "buy";
-            reason = `Simulated AI suggests buying ${asset}`;
-            tradeSimulation("BUY", tradeConfig.tradeAmount, user.username, asset);
+            reason = `AI suggests buying ${asset}`;
+            await tradeFn("BUY", autoInvestAmount, user.username);  
         } else if (prediction === "SELL") {
             tradeAction = "sell";
-            reason = `Simulated AI suggests selling ${asset}`;
-            tradeSimulation("SELL", tradeConfig.tradeAmount, user.username, asset);
+            reason = `AI suggests selling ${asset}`;
+            await tradeFn("SELL", autoInvestAmount, user.username);
         }
 
-        console.log(`📈 [SIMULATION] ${asset} Price: $${price}`);
-        console.log(`✅ [SIMULATION] ${tradeAction.toUpperCase()} ${tradeConfig.tradeAmount} ${asset}`);
+        console.log(`✅ Trade executed: ${tradeAction} ${autoInvestAmount} ${asset} at $${price}`);
 
+        // Emit trade event to frontend
         io.emit("tradeUpdate", {
             username: user.username,
             asset,
             action: tradeAction,
-            amount: tradeConfig.tradeAmount,
+            amount: autoInvestAmount,
             price,
-            message: `Simulated trade: ${tradeAction} ${tradeConfig.tradeAmount} ${asset} at $${price}`
+            timestamp: new Date().toISOString(),
+            message: `Trade executed: ${tradeAction} ${autoInvestAmount} ${asset} at $${price}`
         });
 
-    }, intervalMs);
+    }, intervalMs); // Force 1-second interval
 
-    return { action: "started", reason: `Simulated trading every ${frequency}` };
+    return { action: "started", reason: `Trading every 1 second` };
 };
 
-// Stop trading simulation
+// 🛑 Stop Auto Trading
 const stopAutoTrade = async (req, res) => {
     try {
         const { username } = req.body;
+
         Object.keys(tradeIntervals).forEach((key) => {
             if (key.startsWith(username)) {
                 clearInterval(tradeIntervals[key]);
                 delete tradeIntervals[key];
             }
         });
-        console.log(`🛑 Simulated auto-trading stopped for ${username}`);
-        res.json({ success: true, message: "Simulated trading stopped" });
+
+        console.log(`🛑 Auto-trading stopped for ${username}`);
+        res.json({ success: true, message: "Auto-trading stopped" });
     } catch (error) {
-        console.error("Error stopping simulated auto-trade:", error);
+        console.error("Error stopping auto-trade:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
