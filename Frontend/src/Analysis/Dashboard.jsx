@@ -472,13 +472,33 @@ const Dashboard = () => {
                   <div>
                     <h2 className="text-xl font-bold">AUTO_INVEST is started</h2>
                     <p className="text-gray-400">
-                      {selectedOption.includes("5 min")
+{/*                         {selectedOption.includes("5 min")
                         ? "Bot is investing for 5 minutes"
                         : selectedOption.includes("10 min")
                           ? "Bot is investing for 10 minutes"
                           : selectedOption.includes("15 min")
                             ? "Bot is investing for 15 minutes"
-                            : "Bot is investing"}
+                            : "Bot is investing"} */}
+
+{
+  selectedOption.includes("5 min")
+    ? "Bot is investing for 5 minutes"
+    : selectedOption.includes("10 min")
+      ? "Bot is investing for 10 minutes"
+      : selectedOption.includes("15 min")
+        ? "Bot is investing for 15 minutes"
+        : selectedOption.includes("20 min")
+          ? "Bot is investing for 20 minutes"
+          : selectedOption.includes("25 min")
+            ? "Bot is investing for 25 minutes"
+            : selectedOption.includes("30 min")
+              ? "Bot is investing for 30 minutes"
+              : selectedOption.includes("Continue investment")
+                ? "Bot is investing continuously"
+                : "Bot is investing"
+}
+
+                      
                     </p>
                   </div>
                 </div>
