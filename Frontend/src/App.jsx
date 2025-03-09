@@ -33,11 +33,12 @@ function App() {
             <Route path="/dashboard" element={<Dashboard/>}/>
             <Route path="/ai" element={<AutoInvestMent/>}/>
             <Route path="/ai-simulator" element={<AiSimulator />} /> 
-            <Route path="/profile" element={
+{/*             <Route path="/profile" element={
               <React.Suspense fallback={<div>Loading...</div>}>
                 <Profile />
               </React.Suspense>
-            }/>
+            }/> */}
+             <Route path="/profile" element={<Profile />}/>
           </Routes>
           <Footer/>
         </div>
