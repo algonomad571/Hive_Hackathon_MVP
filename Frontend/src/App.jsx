@@ -13,6 +13,7 @@ import Chatbot from "./AiAssistant/Chatbot";
 import Navbar from "./Components/Common/Navbar";
 import Footer from "./Components/Common/Footer";
 import Profile from "./Analysis/Profile"; // Import the Profile component
+import AiSimulator from "./Analysis/AiSimulator";
 
 function App() {
   console.log('App rendering'); // Debug log
@@ -31,6 +32,7 @@ function App() {
             <Route path="/premium" element={<SubscriptionPlan/>}/>
             <Route path="/dashboard" element={<Dashboard/>}/>
             <Route path="/ai" element={<AutoInvestMent/>}/>
+            <Route path="/ai-simulator" element={<AiSimulator />} /> 
             <Route path="/profile" element={
               <React.Suspense fallback={<div>Loading...</div>}>
                 <Profile />
