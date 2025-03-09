@@ -1,6 +1,6 @@
-const { io } = require("../server"); 
+const { io } = require("../server");
 const { predictMarketTrend } = require("../services/aiTradingService");
-const { getUserBalance } = require("../services/hiveService");
+const { getUserBalance, getHivePrice, getHBDPrice } = require("../services/hiveService");
 
 const tradeConfig = {
     tradeAmount: 10,
@@ -9,10 +9,9 @@ const tradeConfig = {
 
 let tradeIntervals = {}; // Store user-specific trade intervals
 
-const startAutoTrading = async (user, asset, getPriceFn, tradeFn) => {
-    const intervalMs = 1000; // Force API calls every 1 second
+const startAutoTrading = async (user, asset) => {
+    const intervalMs = 1000; // Auto-trade every 1 second
 
-    // Stop previous trading session if running
     if (tradeIntervals[`${user.username}_${asset}`]) {
         clearInterval(tradeIntervals[`${user.username}_${asset}`]);
         console.log(`🛑 Stopping previous trading session for ${asset} - ${user.username}`);
@@ -21,17 +20,17 @@ const startAutoTrading = async (user, asset, getPriceFn, tradeFn) => {
     console.log(`🔵 Starting auto-trading for ${asset} every 1 second`);
 
     tradeIntervals[`${user.username}_${asset}`] = setInterval(async () => {
-        console.log(`⏳ Executing trade for ${asset} - ${user.username}`);
+        console.log(`⏳ Fetching ${asset} price and user balance...`);
 
-        const price = await getPriceFn();
+        const price = asset === "HIVE" ? await getHivePrice() : await getHBDPrice();
         if (!price) return console.log(`⚠️ ${asset} price unavailable`);
 
         console.log(`📈 Current ${asset} Price: $${price}`);
 
-        // Simulate fetching user balance
+        // Get user's balance from Hive
         const userBalance = await getUserBalance(user.username, asset);
         if (!userBalance || userBalance <= 0) {
-            console.log(`🚫 Insufficient balance for ${user.username} to trade ${asset}`);
+            console.log(`🚫 ${user.username} has insufficient ${asset} balance`);
             return;
         }
 
@@ -39,21 +38,18 @@ const startAutoTrading = async (user, asset, getPriceFn, tradeFn) => {
 
         let prediction = await predictMarketTrend(asset, price);
         let tradeAction = "hold";
-        let reason = "Market stable";
 
         if (prediction === "BUY") {
             tradeAction = "buy";
-            reason = `AI suggests buying ${asset}`;
-            await tradeFn("BUY", autoInvestAmount, user.username);  
+            console.log(`📢 AI suggests buying ${autoInvestAmount} ${asset}`);
         } else if (prediction === "SELL") {
             tradeAction = "sell";
-            reason = `AI suggests selling ${asset}`;
-            await tradeFn("SELL", autoInvestAmount, user.username);
+            console.log(`📢 AI suggests selling ${autoInvestAmount} ${asset}`);
         }
 
-        console.log(`✅ Trade executed: ${tradeAction} ${autoInvestAmount} ${asset} at $${price}`);
+        console.log(`✅ Simulated trade: ${tradeAction} ${autoInvestAmount} ${asset} at $${price}`);
 
-        // Emit trade event to frontend
+        // Emit trade update to frontend
         io.emit("tradeUpdate", {
             username: user.username,
             asset,
@@ -61,10 +57,10 @@ const startAutoTrading = async (user, asset, getPriceFn, tradeFn) => {
             amount: autoInvestAmount,
             price,
             timestamp: new Date().toISOString(),
-            message: `Trade executed: ${tradeAction} ${autoInvestAmount} ${asset} at $${price}`
+            message: `Simulated Trade: ${tradeAction} ${autoInvestAmount} ${asset} at $${price}`
         });
 
-    }, intervalMs); // Force 1-second interval
+    }, intervalMs);
 
     return { action: "started", reason: `Trading every 1 second` };
 };
