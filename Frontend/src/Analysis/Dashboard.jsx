@@ -173,7 +173,7 @@ const Dashboard = () => {
     { name: "Payment", icon: "💳", onClick: () => setActiveMenu("Payment") },
     { name: "Information", icon: "ℹ", onClick: () => setActiveMenu("Information") },
     { name: "Notifications", icon: "🔔", onClick: () => setActiveMenu("Notifications") },
-    { name: "AI_Simulator", icon: "🤖", onClick: () => navigate("/ai-simulator") }
+    { name: "Simulator", icon: "🤖", onClick: () => navigate('/simulator') },
   ];
 
   // State for profit data
@@ -356,7 +356,7 @@ const Dashboard = () => {
 
         {/* Sidebar menu items */}
         <div className="mt-6">
-          {menuItems.map((item) =>
+          {menuItems.map((item) => (
             item.name === "AUTO_INVEST" ? (
               <div key={item.name} className="relative dropdown-container">
                 <div
@@ -417,7 +417,7 @@ const Dashboard = () => {
               // Regular menu items remain unchanged
               <div
                 key={item.name}
-                onClick={() => setActiveMenu(item.name)}
+                onClick={item.onClick || (() => setActiveMenu(item.name))}
                 className={`flex items-center p-3 mb-2 rounded-md cursor-pointer ${
                   activeMenu === item.name ? "bg-gray-800" : "hover:bg-gray-800"
                 }`}
@@ -429,7 +429,7 @@ const Dashboard = () => {
                 )}
               </div>
             )
-          )}
+          ))}
         </div>
 
         <div className="mt-auto pt-8 flex items-center">
