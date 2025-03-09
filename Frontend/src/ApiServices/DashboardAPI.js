@@ -1,10 +1,11 @@
 import axios from 'axios';
+import config from '../config/config';
 
-const API_BASE_URL = 'http://localhost:5000/api'; 
+const API_BASE_URL = config.API_URL;
 
 export const getBalance = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/balance`);
+    const response = await axios.get(`${API_BASE_URL}/api/balance`);
     return response.data;
   } catch (error) {
     console.error("Error fetching balance:", error);
