@@ -3,16 +3,16 @@ const { startAutoTrading, stopAutoTrade } = require("../controllers/autoInvestTr
 
 const router = express.Router();
 
-// 🟢 Start Simulated Auto Trading
+// 🟢 Start Auto Trading (Reads from Hive)
 router.post("/start", async (req, res) => {
     try {
-        const { username, asset, frequency } = req.body;
-        
-        if (!username || !asset || !frequency) {
+        const { username, asset } = req.body;
+
+        if (!username || !asset) {
             return res.status(400).json({ error: "Missing required fields" });
         }
 
-        const response = await startAutoTrading({ username }, asset, frequency);
+        const response = await startAutoTrading({ username }, asset);
         res.json(response);
     } catch (error) {
         console.error("Error starting auto-trade:", error);
@@ -20,7 +20,7 @@ router.post("/start", async (req, res) => {
     }
 });
 
-// 🛑 Stop Simulated Auto Trading
+// 🛑 Stop Auto Trading
 router.post("/stop", stopAutoTrade);
 
 module.exports = router;
