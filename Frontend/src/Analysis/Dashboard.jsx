@@ -287,22 +287,82 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Sidebar menu items */}
         <div className="mt-6">
-          {menuItems.map((item) => (
-            <div
-              key={item.name}
-              onClick={item.onClick}
-              className={`flex items-center p-3 mb-2 rounded-md cursor-pointer ${
-                activeMenu === item.name ? "bg-gray-800" : "hover:bg-gray-800"
-              }`}
-            >
-              <span className="mr-3">{item.icon}</span>
-              <span>{item.name}</span>
-              {item.name === "Notifications" && (
-                <span className="ml-auto bg-red-500 text-xs px-2 py-1 rounded-md">4</span>
-              )}
-            </div>
-          ))}
+          {menuItems.map((item) =>
+            item.name === "AUTO_INVEST" ? (
+              <div key={item.name} className="relative dropdown-container">
+                <div
+                  onClick={() => {
+                    setActiveMenu("AUTO_INVEST");
+                    setDropdownOpen(!dropdownOpen);
+                  }}
+                  className={`flex items-center p-3 mb-2 rounded-md cursor-pointer ${
+                    activeMenu === "AUTO_INVEST" ? "bg-gray-800" : "hover:bg-gray-800"
+                  }`}
+                >
+                  <span className="mr-3">
+                    <img
+                      src={AiRoboIcon || "/placeholder.svg"}
+                      alt="AI"
+                      className="w-5 h-5"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "data:image/svg+xml,..."; // Keep existing fallback
+                      }}
+                    />
+                  </span>
+                  <span>AUTO_INVEST</span>
+                  <span
+                    className="ml-auto transition-transform duration-200"
+                    style={{ transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                  >
+                    ▼
+                  </span>
+                </div>
+
+                {/* Dropdown Menu */}
+                {dropdownOpen && (
+                  <div className="absolute left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-10">
+                    {dropdownOptions.map((option) => (
+                      <div
+                        key={option.name}
+                        onClick={() => {
+                          setSelectedOption(option.name);
+                          setDropdownOpen(false);
+                        }}
+                        className="flex items-center p-3 hover:bg-gray-700 cursor-pointer"
+                      >
+                        <span className="mr-3">{option.icon}</span>
+                        <span>{option.name}</span>
+                        {selectedOption === option.name && (
+                          <span className="ml-auto text-purple-400">✓</span>
+                        )}
+                        {option.isPremium && (
+                          <span className="ml-2 text-xs text-yellow-400">Premium</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Regular menu items remain unchanged
+              <div
+                key={item.name}
+                onClick={() => setActiveMenu(item.name)}
+                className={`flex items-center p-3 mb-2 rounded-md cursor-pointer ${
+                  activeMenu === item.name ? "bg-gray-800" : "hover:bg-gray-800"
+                }`}
+              >
+                <span className="mr-3">{item.icon}</span>
+                <span>{item.name}</span>
+                {item.name === "Notifications" && (
+                  <span className="ml-auto bg-red-500 text-xs px-2 py-1 rounded-md">4</span>
+                )}
+              </div>
+            )
+          )}
         </div>
 
         <div className="mt-auto pt-8 flex items-center">
