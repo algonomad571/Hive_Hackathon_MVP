@@ -1,14 +1,13 @@
 const { getHivePrice, tradeHive, getHBDPrice, tradeHBD } = require("../services/binanceService");
 const { predictMarketTrend } = require("../services/aiTradingService");
 const { initTradeConfig } = require("../services/tradeConfigService");
-
-const DUMMY_MODE = process.env.DUMMY_MODE === "true"; // Enable Dummy Mode
+const { getUserBalance } = require("../services/hiveService"); // Fetch user's real balance
 
 const tradeConfig = {
     tradeAmount: 10,
     stopLossPercentage: 5,
     takeProfitPercentage: 10,
-    autoInvestPercentage: 50 
+    autoInvestPercentage: 50
 };
 
 initTradeConfig(tradeConfig);
@@ -46,27 +45,27 @@ const startAutoTrading = async (user, asset, getPriceFn, tradeFn, frequency) => 
 
         console.log(`📈 Current ${asset} Price: $${price}`);
 
-        let simulatedBalance = Math.floor(Math.random() * 500) + 100;
-        let autoInvestAmount = (tradeConfig.autoInvestPercentage / 100) * simulatedBalance;
+        // Get the user's real Hive/HBD balance
+        const userBalance = await getUserBalance(user.username, asset);
+        if (!userBalance || userBalance <= 0) {
+            console.log(`🚫 Insufficient balance for ${user.username} to trade ${asset}`);
+            return;
+        }
+
+        let autoInvestAmount = (tradeConfig.autoInvestPercentage / 100) * userBalance;
 
         let prediction = await predictMarketTrend(asset, price);
         let tradeAction = "hold";
         let reason = "Market stable";
 
-        if (DUMMY_MODE) {
-            console.log(`⚠️ Running in DUMMY MODE: No actual trades executed!`);
-            tradeAction = Math.random() > 0.5 ? "buy" : "sell";
-            reason = "Simulated trade in dummy mode";
-        } else {
-            if (prediction === "BUY") {
-                tradeAction = "buy";
-                reason = `AI suggests buying ${asset}`;
-                await tradeFn("BUY", autoInvestAmount);
-            } else if (prediction === "SELL") {
-                tradeAction = "sell";
-                reason = `AI suggests selling ${asset}`;
-                await tradeFn("SELL", autoInvestAmount);
-            }
+        if (prediction === "BUY") {
+            tradeAction = "buy";
+            reason = `AI suggests buying ${asset}`;
+            await tradeFn("BUY", autoInvestAmount, user.username);  // Execute real transaction
+        } else if (prediction === "SELL") {
+            tradeAction = "sell";
+            reason = `AI suggests selling ${asset}`;
+            await tradeFn("SELL", autoInvestAmount, user.username); // Execute real transaction
         }
 
         console.log(`✅ Trade executed: ${tradeAction} ${autoInvestAmount} ${asset} at $${price}`);
