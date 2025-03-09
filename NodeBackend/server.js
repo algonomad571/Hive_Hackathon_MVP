@@ -26,7 +26,7 @@ const app = express();
 
 // CORS configuration
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002','https://hive-hackathon-mvp-tawny.vercel.app'],
     credentials: true
 }));
 
@@ -95,6 +95,10 @@ initTradeConfig(config);
 const PORT = process.env.PORT || 3500;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+});
+
+app.get("/", (req, res) => {
+  res.send("Hello, Render!");
 });
 
 console.log('Environment variables loaded:', {
