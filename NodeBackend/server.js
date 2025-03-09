@@ -29,7 +29,7 @@ const io = socketIo(server, {
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:3002",
-      "https://hive-hackathon-mvp-tawny.vercel.app",
+      "https://hive-hackathon-mvp-tawny.vercel.app/",
     ],
     credentials: true,
   },
