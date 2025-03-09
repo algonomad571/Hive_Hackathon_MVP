@@ -80,7 +80,8 @@ app.use(cors({
     "http://localhost:3001",
     "http://localhost:3002",
     "https://hive-hackathon-mvp-tawny.vercel.app",
-    "https://hive-hackathon-6fwfajkcj-muskan-srivastavs-projects.vercel.app"
+    "https://hive-hackathon-6fwfajkcj-muskan-srivastavs-projects.vercel.app",
+    "https://hive-hackathon-mvp-gq5k.vercel.app/",
   ],
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,Authorization",
