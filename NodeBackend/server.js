@@ -73,7 +73,19 @@ io.on("connection", (socket) => {
 
 // Middleware
 app.use(express.json());
-app.use(cors()); // Enable CORS
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "https://hive-hackathon-mvp-tawny.vercel.app",
+    "https://hive-hackathon-6fwfajkcj-muskan-srivastavs-projects.vercel.app"
+  ],
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type,Authorization",
+  credentials: true
+}));
+
 
 // Routes
 const userRoutes = require("./routes/userRoutes");
